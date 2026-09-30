@@ -35,12 +35,14 @@ export default async function HomePage({
     : { status: "semua" as const, type: "semua" as const, search: "", sort: "tanggal" as const, order: "desc" as const };
 
   const service = new DebtService(new SupabaseDebtRepository(supabase));
-  const debts = await service.list(user.id, q).catch(() => []);
-  const summary = await service.summaryForUser(user.id).catch(() => ({
-    totalOwedToMe: 0,
-    totalIOwe: 0,
-    net: 0,
-  }));
+  const [debts, summary] = await Promise.all([
+    service.list(user.id, q).catch(() => []),
+    service.summaryForUser(user.id).catch(() => ({
+      totalOwedToMe: 0,
+      totalIOwe: 0,
+      net: 0,
+    })),
+  ]);
 
   return (
     <div className="flex min-h-full flex-1 flex-col bg-zinc-50 dark:bg-black">
