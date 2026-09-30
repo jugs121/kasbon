@@ -45,7 +45,7 @@ export default function LoginForm() {
 
   return (
     <main className="mx-auto flex min-h-full w-full max-w-sm flex-col justify-center px-5 py-16">
-      <h1 className="text-2xl font-bold">Balik lagi 👋</h1>
+      <h1 className="text-2xl font-bold">Balik lagi</h1>
       <p className="mt-1 text-sm text-zinc-500">Masuk buat liat siapa aja yang kasbon ke kamu.</p>
       <Card className="mt-6">
         <form onSubmit={onSubmit} className="flex flex-col gap-3">

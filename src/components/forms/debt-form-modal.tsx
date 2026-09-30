@@ -62,7 +62,7 @@ export default function DebtFormModal({ open, initial, saving, error, onClose, o
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">{initial ? "Edit catatan" : "Catat baru ✍️"}</h2>
+          <h2 className="text-lg font-bold">{initial ? "Edit catatan" : "Catat baru"}</h2>
           <button onClick={onClose} aria-label="Tutup" className="rounded-full p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900">
             <X size={18} />
           </button>
@@ -102,7 +102,7 @@ export default function DebtFormModal({ open, initial, saving, error, onClose, o
           </label>
           {(localError ?? error) && <p className="text-sm text-red-600">{localError ?? error}</p>}
           <Button type="submit" disabled={saving}>
-            {saving ? "Lagi nyimpen..." : initial ? "Simpen perubahan" : "Catat 🫶"}
+            {saving ? "Lagi nyimpen..." : initial ? "Simpen perubahan" : "Catat"}
           </Button>
         </form>
       </div>
