@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { Debt, DebtType } from "@/modules/debts/debt.types";
 import { Button, Input } from "@/components/ui/primitives";
@@ -27,6 +27,15 @@ export default function DebtFormModal({ open, initial, saving, error, onClose, o
   const [dueDate, setDueDate] = useState(initial?.due_date ?? "");
   const [note, setNote] = useState(initial?.note ?? "");
   const [localError, setLocalError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
 
   if (!open) return null;
 
@@ -58,12 +67,15 @@ export default function DebtFormModal({ open, initial, saving, error, onClose, o
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-5" onClick={onClose}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={initial ? "Edit catatan" : "Catat baru"}
         className="w-full max-w-md rounded-t-3xl bg-white p-5 dark:bg-zinc-950 sm:rounded-3xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold">{initial ? "Edit catatan" : "Catat baru ✍️"}</h2>
-          <button onClick={onClose} aria-label="Tutup" className="rounded-full p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900">
+          <h2 className="text-lg font-bold">{initial ? "Edit catatan" : "Catat baru"}</h2>
+          <button onClick={onClose} aria-label="Tutup" className="rounded-full p-1.5 hover:bg-zinc-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900 dark:hover:bg-zinc-900">
             <X size={18} />
           </button>
         </div>
@@ -86,7 +98,7 @@ export default function DebtFormModal({ open, initial, saving, error, onClose, o
           </div>
           <label className="text-sm font-medium">
             Nama orang
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="cth. Budi" maxLength={100} />
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="cth. Budi" maxLength={100} autoFocus />
           </label>
           <label className="text-sm font-medium">
             Jumlah (Rp)
@@ -102,7 +114,7 @@ export default function DebtFormModal({ open, initial, saving, error, onClose, o
           </label>
           {(localError ?? error) && <p className="text-sm text-red-600">{localError ?? error}</p>}
           <Button type="submit" disabled={saving}>
-            {saving ? "Lagi nyimpen..." : initial ? "Simpen perubahan" : "Catat 🫶"}
+            {saving ? "Lagi nyimpen..." : initial ? "Simpen perubahan" : "Catat"}
           </Button>
         </form>
       </div>
