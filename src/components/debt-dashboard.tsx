@@ -63,22 +63,49 @@ function filterReducer(state: FilterState, action: FilterAction): FilterState {
   }
 }
 
+type ListState = {
+  data: ApiData;
+  loading: boolean;
+  error: string | null;
+};
+
+type ListAction =
+  | { type: "fetch-start" }
+  | { type: "fetch-success"; data: ApiData }
+  | { type: "fetch-failure"; error: string }
+  | { type: "set-error"; error: string };
+
+function listReducer(state: ListState, action: ListAction): ListState {
+  switch (action.type) {
+    case "fetch-start":
+      return { ...state, loading: true, error: null };
+    case "fetch-success":
+      return { data: action.data, loading: false, error: null };
+    case "fetch-failure":
+      return { ...state, loading: false, error: action.error };
+    case "set-error":
+      return { ...state, error: action.error };
+  }
+}
+
 export default function DebtDashboard({ email, initial }: { email: string; initial: ApiData }) {
-  const [data, setData] = useState<ApiData>(initial);
+  const [list, dispatchList] = useReducer(listReducer, {
+    data: initial,
+    loading: false,
+    error: null,
+  });
+  const { data, loading, error } = list;
   const [filters, dispatchFilter] = useReducer(filterReducer, initialFilters);
   const { status, type, search, sort, order } = filters;
   const [view, setView] = useState<"catatan" | "orang">("catatan");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Debt | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   async function refresh(params?: { s?: string; t?: string; q?: string; sort?: string; order?: string }) {
-    setLoading(true);
-    setError(null);
+    dispatchList({ type: "fetch-start" });
     try {
       const sp = new URLSearchParams({
         status: params?.s ?? status,
@@ -90,11 +117,12 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       const res = await fetch(`/api/debts?${sp.toString()}`);
       const body = await res.json();
       if (!res.ok) throw new Error(body.Message ?? "Gagal ambil data");
-      setData(body.Data as ApiData);
+      dispatchList({ type: "fetch-success", data: body.Data as ApiData });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal ambil data, coba refresh ya");
-    } finally {
-      setLoading(false);
+      dispatchList({
+        type: "fetch-failure",
+        error: e instanceof Error ? e.message : "Gagal ambil data, coba refresh ya",
+      });
     }
   }
 
@@ -145,7 +173,10 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       if (!res.ok) throw new Error(body.Message ?? "Gagal update");
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal update, coba lagi ya");
+      dispatchList({
+        type: "set-error",
+        error: e instanceof Error ? e.message : "Gagal update, coba lagi ya",
+      });
     }
   }
 
@@ -157,7 +188,10 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       if (!res.ok) throw new Error(body.Message ?? "Gagal hapus");
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal hapus, coba lagi ya");
+      dispatchList({
+        type: "set-error",
+        error: e instanceof Error ? e.message : "Gagal hapus, coba lagi ya",
+      });
     }
   }
 
