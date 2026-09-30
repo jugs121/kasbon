@@ -225,7 +225,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
                   </div>
                   <div className="flex shrink-0 gap-1">
                     {!settled && (
-                      <button onClick={() => toggleSettled(d)} title="Tandai lunas" className="rounded-full bg-emerald-600 p-2 text-white hover:bg-emerald-500">
+                      <button onClick={() => toggleSettled(d)} title="Tandai lunas" className="rounded-full border border-emerald-300 p-2 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40">
                         <CheckCheck size={15} />
                       </button>
                     )}
