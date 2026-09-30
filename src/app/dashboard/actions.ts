@@ -31,7 +31,7 @@ export async function createDebtAction(form: {
     due_date: form.due_date ?? null,
     note: form.note ?? null,
   });
-  if (!parsed.success) throw new Error(parsed.issues[0]?.message ?? "Inputnya belum bener nih");
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Inputnya belum bener nih");
   const { user, service } = await getService();
   const debt = await service.create(user.id, parsed.data);
   revalidatePath("/");
@@ -47,7 +47,7 @@ export async function updateDebtAction(id: unknown, form: Record<string, unknown
         ? Number(form.amount)
         : form.amount,
   });
-  if (!parsed.success) throw new Error(parsed.issues[0]?.message ?? "Inputnya belum bener nih");
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Inputnya belum bener nih");
   const { user, service } = await getService();
   const debt = await service.update(user.id, id, parsed.data);
   revalidatePath("/");

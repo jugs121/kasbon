@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
   const parsed = createDebtSchema.safeParse(raw);
   if (!parsed.success)
-    return json(fail(parsed.issues[0]?.message ?? "Inputnya belum bener nih"), 400);
+    return json(fail(parsed.error.issues[0]?.message ?? "Inputnya belum bener nih"), 400);
 
   try {
     const debt = await service.create(user.id, parsed.data);

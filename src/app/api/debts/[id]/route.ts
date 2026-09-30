@@ -48,7 +48,7 @@ export async function PATCH(
 
   const parsed = updateDebtSchema.safeParse(raw);
   if (!parsed.success)
-    return json(fail(parsed.issues[0]?.message ?? "Inputnya belum bener nih"), 400);
+    return json(fail(parsed.error.issues[0]?.message ?? "Inputnya belum bener nih"), 400);
   if (Object.keys(parsed.data).length === 0)
     return json(fail("Gak ada yang diubah nih"), 400);
 
