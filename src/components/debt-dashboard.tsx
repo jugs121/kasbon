@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useReducer, useState } from "react";
+import { useEffect, useReducer, useRef, useState } from "react";
 import {
   ArrowDownUp,
   CheckCheck,
@@ -140,6 +140,9 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [form, dispatchForm] = useReducer(formReducer, initialForm);
   const { modalOpen, editing, saving, formError } = form;
+  // Data awal udah diambil server (page.tsx), jadi fetch pertama di-skip.
+  // Fetch ulang cuma jalan kalau user ngubah filter/sort/search.
+  const firstRun = useRef(true);
 
   async function refresh(params?: { s?: string; t?: string; q?: string; sort?: string; order?: string }) {
     dispatchList({ type: "fetch-start" });
@@ -164,6 +167,10 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
   }
 
   useEffect(() => {
+    if (firstRun.current) {
+      firstRun.current = false;
+      return;
+    }
     const t = setTimeout(() => refresh(), 350);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
