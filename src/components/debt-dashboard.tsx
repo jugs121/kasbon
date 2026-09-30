@@ -247,8 +247,28 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
         </div>
       </div>
 
-      {loading && <p className="text-center text-sm text-zinc-400">Lagi ngeload...</p>}
-      {error && <p className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-600">{error}</p>}
+      {loading && debts.length === 0 && (
+        <div className="flex flex-col gap-2" aria-label="Lagi ngeload data" role="status">
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className="animate-pulse">
+              <div className="h-4 w-1/3 rounded bg-zinc-200 dark:bg-zinc-800" />
+              <div className="mt-2 h-3 w-1/2 rounded bg-zinc-100 dark:bg-zinc-800" />
+              <div className="mt-2 h-5 w-1/4 rounded bg-zinc-200 dark:bg-zinc-800" />
+            </Card>
+          ))}
+        </div>
+      )}
+      {loading && debts.length > 0 && (
+        <p className="text-center text-xs text-zinc-400" role="status">Lagi ngupdate...</p>
+      )}
+      {error && (
+        <Card className="border-red-200 bg-red-50 text-center dark:border-red-950 dark:bg-red-950/30">
+          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <div className="mt-2">
+            <Button onClick={() => refresh()}>Coba lagi</Button>
+          </div>
+        </Card>
+      )}
 
       {!loading && debts.length === 0 && !isFiltered && (
         <Card className="py-10 text-center">
