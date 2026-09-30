@@ -130,18 +130,18 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
         <LogoutButton />
       </header>
 
-      <section className="grid grid-cols-3 gap-2">
-        <Card>
-          <p className="text-[11px] text-zinc-500">Dihutang ke saya</p>
-          <p className="mt-1 text-sm font-bold text-emerald-600 sm:text-base">{formatRupiah(summary.totalOwedToMe)}</p>
+      <section aria-label="Ringkasan" className="grid grid-cols-3 gap-2">
+        <Card className="bg-zinc-50/60 dark:bg-zinc-900/40">
+          <p className="text-[11px] font-medium text-zinc-500">Dihutang ke saya</p>
+          <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">{formatRupiah(summary.totalOwedToMe)}</p>
         </Card>
-        <Card>
-          <p className="text-[11px] text-zinc-500">Saya hutang</p>
-          <p className="mt-1 text-sm font-bold text-rose-600 sm:text-base">{formatRupiah(summary.totalIOwe)}</p>
+        <Card className="bg-zinc-50/60 dark:bg-zinc-900/40">
+          <p className="text-[11px] font-medium text-zinc-500">Saya hutang</p>
+          <p className="mt-1 text-sm font-semibold text-zinc-900 dark:text-zinc-100">{formatRupiah(summary.totalIOwe)}</p>
         </Card>
-        <Card className={netPositive ? "border-emerald-200 bg-emerald-50 dark:bg-emerald-950/30" : "border-rose-200 bg-rose-50 dark:bg-rose-950/30"}>
-          <p className="text-[11px] text-zinc-500">Net</p>
-          <p className={`mt-1 text-sm font-bold sm:text-base ${netPositive ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
+        <Card className={netPositive ? "border-emerald-300 bg-emerald-50 shadow-sm dark:bg-emerald-950/30" : "border-rose-300 bg-rose-50 shadow-sm dark:bg-rose-950/30"}>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">Net</p>
+          <p className={`mt-1 text-base font-extrabold tracking-tight sm:text-lg ${netPositive ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
             {formatRupiah(summary.net)}
           </p>
         </Card>
@@ -207,19 +207,19 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           const settled = d.settled_at !== null;
           return (
             <li key={d.id}>
-              <Card className={settled ? "opacity-70" : ""}>
+              <Card className={settled ? "bg-zinc-50/60 opacity-75 dark:bg-zinc-900/40" : "border-zinc-300 shadow-sm"}>
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="truncate font-semibold">{d.counterpart_name}</p>
+                    <p className={`truncate ${settled ? "font-medium text-zinc-500" : "font-semibold text-zinc-900 dark:text-zinc-100"}`}>{d.counterpart_name}</p>
                     <p className="text-xs text-zinc-500">
-                      <span className={`mr-1 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${d.type === "owed_to_me" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"}`}>
+                      <span className={`mr-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${d.type === "owed_to_me" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"}`}>
                         {d.type === "owed_to_me" ? "dihutang" : "hutang"}
                       </span>
                       {formatRelative(d.created_at)}
                       {d.note ? ` • ${d.note}` : ""}
                     </p>
-                    <p className="mt-1 font-bold">{formatRupiah(d.amount)}</p>
-                    <p className={`text-xs font-medium ${settled ? "text-emerald-600" : "text-amber-600"}`}>
+                    <p className={settled ? "mt-1 text-sm font-semibold text-zinc-500" : "mt-1 text-base font-extrabold tracking-tight"}>{formatRupiah(d.amount)}</p>
+                    <p className={`text-xs font-semibold ${settled ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
                       {settled ? "Lunas" : "Belum lunas"}
                     </p>
                   </div>
