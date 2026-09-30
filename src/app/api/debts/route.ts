@@ -74,6 +74,7 @@ export async function POST(request: Request) {
     const debt = await service.create(user.id, parsed.data);
     return json(ok(debt, "Udah kecatat, jangan lupa nagih ya"), 201);
   } catch (e) {
+    console.log("console error", (e as Error).message)
     return json(fail(e instanceof Error ? e.message : "Gagal nyatet, coba lagi ya"), 400);
   }
 }

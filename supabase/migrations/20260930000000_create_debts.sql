@@ -35,6 +35,11 @@ create trigger set_debts_updated_at
 
 alter table public.debts enable row level security;
 
+-- GRANT wajib: tanpa ini, role authenticated kena "permission denied"
+-- walau policy-nya udah bener. anon sengaja gak dikasih apa-apa.
+grant select, insert, update, delete on public.debts to authenticated;
+revoke all on public.debts from anon;
+
 drop policy if exists "user_select_own" on public.debts;
 drop policy if exists "user_insert_own" on public.debts;
 drop policy if exists "user_update_own" on public.debts;
