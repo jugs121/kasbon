@@ -140,8 +140,6 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [form, dispatchForm] = useReducer(formReducer, initialForm);
   const { modalOpen, editing, saving, formError } = form;
-  // Data awal udah diambil server (page.tsx), jadi fetch pertama di-skip.
-  // Fetch ulang cuma jalan kalau user ngubah filter/sort/search.
   const firstRun = useRef(true);
 
   async function refresh(params?: { s?: string; t?: string; q?: string; sort?: string; order?: string }) {
@@ -436,52 +434,52 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       )}
 
       {view === "catatan" && (
-      <ul className="flex flex-col gap-2" aria-busy={loading}>
-        {debts.map((d) => (
-          <li key={d.id}>{entryRow(d)}</li>
-        ))}
-      </ul>
+        <ul className="flex flex-col gap-2" aria-busy={loading}>
+          {debts.map((d) => (
+            <li key={d.id}>{entryRow(d)}</li>
+          ))}
+        </ul>
       )}
 
       {view === "orang" && (
-      <ul className="flex flex-col gap-2" aria-busy={loading}>
-        {groups.map((g) => {
-          const open = expanded.has(g.key);
-          const groupPositive = g.net >= 0;
-          return (
-            <li key={g.key}>
-              <Card className="p-0">
-                <button
-                  type="button"
-                  onClick={() => togglePerson(g.key)}
-                  aria-expanded={open}
-                  className="flex w-full items-center justify-between gap-2 p-4 text-left"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{g.name}</p>
-                    <p className="text-xs text-zinc-500">
-                      {g.count} entry • total {formatRupiah(g.net)}
-                    </p>
-                  </div>
-                  <div className="flex shrink-0 items-center gap-2">
-                    <p className={`text-sm font-extrabold ${groupPositive ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
-                      {formatRupiah(g.net)}
-                    </p>
-                    <ChevronDown size={16} className={`text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
-                  </div>
-                </button>
-                {open && (
-                  <div className="flex flex-col gap-2 border-t border-zinc-100 p-3 dark:border-zinc-800">
-                    {g.entries.map((d) => (
-                      <div key={d.id}>{entryRow(d)}</div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            </li>
-          );
-        })}
-      </ul>
+        <ul className="flex flex-col gap-2" aria-busy={loading}>
+          {groups.map((g) => {
+            const open = expanded.has(g.key);
+            const groupPositive = g.net >= 0;
+            return (
+              <li key={g.key}>
+                <Card className="p-0">
+                  <button
+                    type="button"
+                    onClick={() => togglePerson(g.key)}
+                    aria-expanded={open}
+                    className="flex w-full items-center justify-between gap-2 p-4 text-left"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-semibold">{g.name}</p>
+                      <p className="text-xs text-zinc-500">
+                        {g.count} entry • total {formatRupiah(g.net)}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <p className={`text-sm font-extrabold ${groupPositive ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
+                        {formatRupiah(g.net)}
+                      </p>
+                      <ChevronDown size={16} className={`text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
+                    </div>
+                  </button>
+                  {open && (
+                    <div className="flex flex-col gap-2 border-t border-zinc-100 p-3 dark:border-zinc-800">
+                      {g.entries.map((d) => (
+                        <div key={d.id}>{entryRow(d)}</div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
       )}
 
       <DebtFormModal
