@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import {
   ArrowDownUp,
   CheckCheck,
@@ -22,25 +22,127 @@ import LogoutButton from "@/components/forms/logout-button";
 
 type ApiData = { debts: Debt[]; summary: DebtSummary };
 
+type FilterState = {
+  status: string;
+  type: string;
+  search: string;
+  sort: "tanggal" | "jumlah";
+  order: "asc" | "desc";
+};
+
+type FilterAction =
+  | { type: "set-status"; status: string }
+  | { type: "set-type"; debtType: string }
+  | { type: "set-search"; search: string }
+  | { type: "set-sort"; sort: FilterState["sort"] }
+  | { type: "set-order"; order: FilterState["order"] }
+  | { type: "reset-filters" };
+
+const initialFilters: FilterState = {
+  status: "semua",
+  type: "semua",
+  search: "",
+  sort: "tanggal",
+  order: "desc",
+};
+
+function filterReducer(state: FilterState, action: FilterAction): FilterState {
+  switch (action.type) {
+    case "set-status":
+      return { ...state, status: action.status };
+    case "set-type":
+      return { ...state, type: action.debtType };
+    case "set-search":
+      return { ...state, search: action.search };
+    case "set-sort":
+      return { ...state, sort: action.sort };
+    case "set-order":
+      return { ...state, order: action.order };
+    case "reset-filters":
+      return initialFilters;
+  }
+}
+
+type ListState = {
+  data: ApiData;
+  loading: boolean;
+  error: string | null;
+};
+
+type ListAction =
+  | { type: "fetch-start" }
+  | { type: "fetch-success"; data: ApiData }
+  | { type: "fetch-failure"; error: string }
+  | { type: "set-error"; error: string };
+
+function listReducer(state: ListState, action: ListAction): ListState {
+  switch (action.type) {
+    case "fetch-start":
+      return { ...state, loading: true, error: null };
+    case "fetch-success":
+      return { data: action.data, loading: false, error: null };
+    case "fetch-failure":
+      return { ...state, loading: false, error: action.error };
+    case "set-error":
+      return { ...state, error: action.error };
+  }
+}
+
+type FormState = {
+  modalOpen: boolean;
+  editing: Debt | null;
+  saving: boolean;
+  formError: string | null;
+};
+
+type FormAction =
+  | { type: "open-new" }
+  | { type: "open-edit"; debt: Debt }
+  | { type: "close" }
+  | { type: "submit-start" }
+  | { type: "submit-success" }
+  | { type: "submit-failure"; error: string };
+
+const initialForm: FormState = {
+  modalOpen: false,
+  editing: null,
+  saving: false,
+  formError: null,
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "open-new":
+      return { ...state, modalOpen: true, editing: null, formError: null };
+    case "open-edit":
+      return { ...state, modalOpen: true, editing: action.debt, formError: null };
+    case "close":
+      return { ...state, modalOpen: false, editing: null };
+    case "submit-start":
+      return { ...state, saving: true, formError: null };
+    case "submit-success":
+      return { modalOpen: false, editing: null, saving: false, formError: null };
+    case "submit-failure":
+      return { ...state, saving: false, formError: action.error };
+  }
+}
+
 export default function DebtDashboard({ email, initial }: { email: string; initial: ApiData }) {
-  const [data, setData] = useState<ApiData>(initial);
-  const [status, setStatus] = useState("semua");
-  const [type, setType] = useState("semua");
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<"tanggal" | "jumlah">("tanggal");
-  const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [list, dispatchList] = useReducer(listReducer, {
+    data: initial,
+    loading: false,
+    error: null,
+  });
+  const { data, loading, error } = list;
+  const [filters, dispatchFilter] = useReducer(filterReducer, initialFilters);
+  const { status, type, search, sort, order } = filters;
   const [view, setView] = useState<"catatan" | "orang">("catatan");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Debt | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [form, dispatchForm] = useReducer(formReducer, initialForm);
+  const { modalOpen, editing, saving, formError } = form;
 
   async function refresh(params?: { s?: string; t?: string; q?: string; sort?: string; order?: string }) {
-    setLoading(true);
-    setError(null);
+    dispatchList({ type: "fetch-start" });
     try {
       const sp = new URLSearchParams({
         status: params?.s ?? status,
@@ -52,11 +154,12 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       const res = await fetch(`/api/debts?${sp.toString()}`);
       const body = await res.json();
       if (!res.ok) throw new Error(body.Message ?? "Gagal ambil data");
-      setData(body.Data as ApiData);
+      dispatchList({ type: "fetch-success", data: body.Data as ApiData });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal ambil data, coba refresh ya");
-    } finally {
-      setLoading(false);
+      dispatchList({
+        type: "fetch-failure",
+        error: e instanceof Error ? e.message : "Gagal ambil data, coba refresh ya",
+      });
     }
   }
 
@@ -73,8 +176,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
     due_date: string | null;
     note: string | null;
   }) {
-    setSaving(true);
-    setFormError(null);
+    dispatchForm({ type: "submit-start" });
     try {
       const url = editing ? `/api/debts/${editing.id}` : "/api/debts";
       const method = editing ? "PATCH" : "POST";
@@ -85,13 +187,13 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.Message ?? "Gagal nyimpen");
-      setModalOpen(false);
-      setEditing(null);
+      dispatchForm({ type: "submit-success" });
       await refresh();
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : "Gagal nyimpen, coba lagi ya");
-    } finally {
-      setSaving(false);
+      dispatchForm({
+        type: "submit-failure",
+        error: e instanceof Error ? e.message : "Gagal nyimpen, coba lagi ya",
+      });
     }
   }
 
@@ -107,7 +209,10 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       if (!res.ok) throw new Error(body.Message ?? "Gagal update");
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal update, coba lagi ya");
+      dispatchList({
+        type: "set-error",
+        error: e instanceof Error ? e.message : "Gagal update, coba lagi ya",
+      });
     }
   }
 
@@ -119,7 +224,10 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       if (!res.ok) throw new Error(body.Message ?? "Gagal hapus");
       await refresh();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Gagal hapus, coba lagi ya");
+      dispatchList({
+        type: "set-error",
+        error: e instanceof Error ? e.message : "Gagal hapus, coba lagi ya",
+      });
     }
   }
 
@@ -162,7 +270,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
                 <CheckCheck size={15} />
               </button>
             )}
-            <button onClick={() => { setEditing(d); setFormError(null); setModalOpen(true); }} title="Edit" aria-label={`Edit ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-zinc-200 p-2.5 hover:bg-zinc-100 dark:border-zinc-800">
+            <button onClick={() => dispatchForm({ type: "open-edit", debt: d })} title="Edit" aria-label={`Edit ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-zinc-200 p-2.5 hover:bg-zinc-100 dark:border-zinc-800">
               <Pencil size={15} />
             </button>
             <button onClick={() => removeDebt(d)} title="Hapus" aria-label={`Hapus ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-zinc-200 p-2.5 text-red-600 hover:bg-red-50 dark:border-zinc-800">
@@ -209,22 +317,22 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => dispatchFilter({ type: "set-search", search: e.target.value })}
               placeholder="Cari nama..."
               className="min-h-[44px] w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
-          <Button onClick={() => { setEditing(null); setFormError(null); setModalOpen(true); }}>
+          <Button onClick={() => dispatchForm({ type: "open-new" })}>
             <Plus size={16} /> Catat baru
           </Button>
         </div>
         <div className="flex gap-2 text-sm">
-          <select value={status} onChange={(e) => { setStatus(e.target.value); }} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
+          <select value={status} onChange={(e) => dispatchFilter({ type: "set-status", status: e.target.value })} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
             <option value="semua">Semua status</option>
             <option value="belum">Belum lunas</option>
             <option value="lunas">Lunas</option>
           </select>
-          <select value={type} onChange={(e) => { setType(e.target.value); }} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
+          <select value={type} onChange={(e) => dispatchFilter({ type: "set-type", debtType: e.target.value })} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
             <option value="semua">Semua tipe</option>
             <option value="owed_to_me">Dihutang</option>
             <option value="i_owe">Hutang</option>
@@ -232,7 +340,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           <button
             onClick={() => {
               const ns = sort === "tanggal" ? "jumlah" : "tanggal";
-              setSort(ns);
+              dispatchFilter({ type: "set-sort", sort: ns });
               refresh({ sort: ns });
             }}
             className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800"
@@ -241,7 +349,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
             <ArrowDownUp size={14} />
             {sort === "tanggal" ? "Tanggal" : "Jumlah"}
           </button>
-          <button onClick={() => { const no = order === "desc" ? "asc" : "desc"; setOrder(no); refresh({ order: no }); }} aria-label={order === "desc" ? "Urut menaik" : "Urut menurun"} className="min-h-[44px] min-w-[44px] rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
+          <button onClick={() => { const no = order === "desc" ? "asc" : "desc"; dispatchFilter({ type: "set-order", order: no }); refresh({ order: no }); }} aria-label={order === "desc" ? "Urut menaik" : "Urut menurun"} className="min-h-[44px] min-w-[44px] rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
             {order === "desc" ? "↓" : "↑"}
           </button>
         </div>
@@ -276,7 +384,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           <p className="mt-2 font-semibold">Masih kosong nih</p>
           <p className="text-sm text-zinc-500">Belum ada catatan kasbon. Yuk catat yang pertama!</p>
           <div className="mt-4">
-            <Button onClick={() => { setEditing(null); setFormError(null); setModalOpen(true); }}>
+            <Button onClick={() => dispatchForm({ type: "open-new" })}>
               <Plus size={16} /> Catat kasbon pertama
             </Button>
           </div>
@@ -289,7 +397,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           <p className="mt-2 font-semibold">Gak ketemu nih</p>
           <p className="text-sm text-zinc-500">Coba ubah filter atau kata pencariannya ya.</p>
           <div className="mt-4">
-            <Button onClick={() => { setStatus("semua"); setType("semua"); setSearch(""); }}>
+            <Button onClick={() => dispatchFilter({ type: "reset-filters" })}>
               Reset filter
             </Button>
           </div>
@@ -375,7 +483,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
         initial={editing}
         saving={saving}
         error={formError}
-        onClose={() => { setModalOpen(false); setEditing(null); }}
+        onClose={() => dispatchForm({ type: "close" })}
         onSubmit={submitForm}
       />
     </main>
