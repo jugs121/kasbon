@@ -88,6 +88,45 @@ function listReducer(state: ListState, action: ListAction): ListState {
   }
 }
 
+type FormState = {
+  modalOpen: boolean;
+  editing: Debt | null;
+  saving: boolean;
+  formError: string | null;
+};
+
+type FormAction =
+  | { type: "open-new" }
+  | { type: "open-edit"; debt: Debt }
+  | { type: "close" }
+  | { type: "submit-start" }
+  | { type: "submit-success" }
+  | { type: "submit-failure"; error: string };
+
+const initialForm: FormState = {
+  modalOpen: false,
+  editing: null,
+  saving: false,
+  formError: null,
+};
+
+function formReducer(state: FormState, action: FormAction): FormState {
+  switch (action.type) {
+    case "open-new":
+      return { ...state, modalOpen: true, editing: null, formError: null };
+    case "open-edit":
+      return { ...state, modalOpen: true, editing: action.debt, formError: null };
+    case "close":
+      return { ...state, modalOpen: false, editing: null };
+    case "submit-start":
+      return { ...state, saving: true, formError: null };
+    case "submit-success":
+      return { modalOpen: false, editing: null, saving: false, formError: null };
+    case "submit-failure":
+      return { ...state, saving: false, formError: action.error };
+  }
+}
+
 export default function DebtDashboard({ email, initial }: { email: string; initial: ApiData }) {
   const [list, dispatchList] = useReducer(listReducer, {
     data: initial,
@@ -99,10 +138,8 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
   const { status, type, search, sort, order } = filters;
   const [view, setView] = useState<"catatan" | "orang">("catatan");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editing, setEditing] = useState<Debt | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [form, dispatchForm] = useReducer(formReducer, initialForm);
+  const { modalOpen, editing, saving, formError } = form;
 
   async function refresh(params?: { s?: string; t?: string; q?: string; sort?: string; order?: string }) {
     dispatchList({ type: "fetch-start" });
@@ -139,8 +176,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
     due_date: string | null;
     note: string | null;
   }) {
-    setSaving(true);
-    setFormError(null);
+    dispatchForm({ type: "submit-start" });
     try {
       const url = editing ? `/api/debts/${editing.id}` : "/api/debts";
       const method = editing ? "PATCH" : "POST";
@@ -151,13 +187,13 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       });
       const body = await res.json();
       if (!res.ok) throw new Error(body.Message ?? "Gagal nyimpen");
-      setModalOpen(false);
-      setEditing(null);
+      dispatchForm({ type: "submit-success" });
       await refresh();
     } catch (e) {
-      setFormError(e instanceof Error ? e.message : "Gagal nyimpen, coba lagi ya");
-    } finally {
-      setSaving(false);
+      dispatchForm({
+        type: "submit-failure",
+        error: e instanceof Error ? e.message : "Gagal nyimpen, coba lagi ya",
+      });
     }
   }
 
@@ -234,7 +270,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
                 <CheckCheck size={15} />
               </button>
             )}
-            <button onClick={() => { setEditing(d); setFormError(null); setModalOpen(true); }} title="Edit" aria-label={`Edit ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-zinc-200 p-2.5 hover:bg-zinc-100 dark:border-zinc-800">
+            <button onClick={() => dispatchForm({ type: "open-edit", debt: d })} title="Edit" aria-label={`Edit ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-zinc-200 p-2.5 hover:bg-zinc-100 dark:border-zinc-800">
               <Pencil size={15} />
             </button>
             <button onClick={() => removeDebt(d)} title="Hapus" aria-label={`Hapus ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-zinc-200 p-2.5 text-red-600 hover:bg-red-50 dark:border-zinc-800">
@@ -286,7 +322,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
               className="min-h-[44px] w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
-          <Button onClick={() => { setEditing(null); setFormError(null); setModalOpen(true); }}>
+          <Button onClick={() => dispatchForm({ type: "open-new" })}>
             <Plus size={16} /> Catat baru
           </Button>
         </div>
@@ -348,7 +384,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           <p className="mt-2 font-semibold">Masih kosong nih</p>
           <p className="text-sm text-zinc-500">Belum ada catatan kasbon. Yuk catat yang pertama!</p>
           <div className="mt-4">
-            <Button onClick={() => { setEditing(null); setFormError(null); setModalOpen(true); }}>
+            <Button onClick={() => dispatchForm({ type: "open-new" })}>
               <Plus size={16} /> Catat kasbon pertama
             </Button>
           </div>
@@ -447,7 +483,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
         initial={editing}
         saving={saving}
         error={formError}
-        onClose={() => { setModalOpen(false); setEditing(null); }}
+        onClose={() => dispatchForm({ type: "close" })}
         onSubmit={submitForm}
       />
     </main>
