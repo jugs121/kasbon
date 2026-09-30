@@ -37,7 +37,7 @@ Env yang dibutuhin cuma 2 itu. Jangan tambah `SERVICE_ROLE`/`SECRET` — app ini
 
 Yang paling gue banggain: strict layering `app/` (routing doang) → `modules/debts/` (service pegang logika, repo cuma data access via interface) → Supabase + RLS. Jadi `Tandai lunas` itu idempotent di `debt.repository.ts` (cek `settled_at` dulu, gak asal overwrite), persist di DB bukan di client, dan semua endpoint return envelope `{Message, Data}` Bahasa Indonesia casual. Rupiah pake `Intl.NumberFormat('id-ID')` biar `Rp 1.234.000` bener, bukan `IDR 1,234,000`.
 
-Library tambahan: `zod` (validasi client + server satu schema), `@supabase/ssr` (cookie handling App Router, `supabase-js` doang gak cukup), `lucide-react` (icons, wajib PRD).
+Library tambahan: `zod` (validasi client + server satu schema), `@supabase/ssr` (cookie handling App Router, `supabase-js` doang gak cukup), `lucide-react` (icons, wajib PRD), `recharts` (bar chart compare dihutang vs hutang, bonus PRD — pilih ini karena deklaratif + tooltip/a11y bawaan, chart-nya cuma jawab satu pertanyaan jadi gak butuh custom D3).
 
 ## Trade-off (kalo ada 1 hari lagi)
 

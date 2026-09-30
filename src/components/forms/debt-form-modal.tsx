@@ -70,7 +70,7 @@ export default function DebtFormModal({ open, initial, saving, error, onClose, o
         role="dialog"
         aria-modal="true"
         aria-label={initial ? "Edit catatan" : "Catat baru"}
-        className="w-full max-w-md rounded-t-3xl bg-white p-5 dark:bg-zinc-950 sm:rounded-3xl"
+        className="w-full max-w-md rounded-t-3xl bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] dark:bg-zinc-950 sm:rounded-3xl sm:pb-5"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
