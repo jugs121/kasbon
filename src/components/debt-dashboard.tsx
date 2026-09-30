@@ -158,14 +158,14 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           </div>
           <div className="flex shrink-0 gap-1">
             {!settled && (
-              <button onClick={() => toggleSettled(d)} title="Tandai lunas" aria-label={`Tandai lunas ${d.counterpart_name}`} className="rounded-full border border-emerald-300 p-2.5 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40">
+              <button onClick={() => toggleSettled(d)} title="Tandai lunas" aria-label={`Tandai lunas ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-emerald-300 p-2.5 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40">
                 <CheckCheck size={15} />
               </button>
             )}
-            <button onClick={() => { setEditing(d); setFormError(null); setModalOpen(true); }} title="Edit" aria-label={`Edit ${d.counterpart_name}`} className="rounded-full border border-zinc-200 p-2.5 hover:bg-zinc-100 dark:border-zinc-800">
+            <button onClick={() => { setEditing(d); setFormError(null); setModalOpen(true); }} title="Edit" aria-label={`Edit ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-zinc-200 p-2.5 hover:bg-zinc-100 dark:border-zinc-800">
               <Pencil size={15} />
             </button>
-            <button onClick={() => removeDebt(d)} title="Hapus" aria-label={`Hapus ${d.counterpart_name}`} className="rounded-full border border-zinc-200 p-2.5 text-red-600 hover:bg-red-50 dark:border-zinc-800">
+            <button onClick={() => removeDebt(d)} title="Hapus" aria-label={`Hapus ${d.counterpart_name}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-full border border-zinc-200 p-2.5 text-red-600 hover:bg-red-50 dark:border-zinc-800">
               <Trash2 size={15} />
             </button>
           </div>
@@ -203,7 +203,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
 
       <DebtChart summary={summary} />
 
-      <div className="flex flex-col gap-2">
+      <div className="sticky top-0 z-10 flex flex-col gap-2 bg-zinc-50/95 py-2 backdrop-blur dark:bg-black/95">
         <div className="flex gap-2">
           <div className="relative flex-1">
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
@@ -211,7 +211,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama..."
-              className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-950"
+              className="min-h-[44px] w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
           <Button onClick={() => { setEditing(null); setFormError(null); setModalOpen(true); }}>
@@ -219,12 +219,12 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           </Button>
         </div>
         <div className="flex gap-2 text-sm">
-          <select value={status} onChange={(e) => { setStatus(e.target.value); }} className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
+          <select value={status} onChange={(e) => { setStatus(e.target.value); }} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
             <option value="semua">Semua status</option>
             <option value="belum">Belum lunas</option>
             <option value="lunas">Lunas</option>
           </select>
-          <select value={type} onChange={(e) => { setType(e.target.value); }} className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
+          <select value={type} onChange={(e) => { setType(e.target.value); }} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
             <option value="semua">Semua tipe</option>
             <option value="owed_to_me">Dihutang</option>
             <option value="i_owe">Hutang</option>
@@ -235,13 +235,13 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
               setSort(ns);
               refresh({ sort: ns });
             }}
-            className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800"
+            className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800"
             title="Ganti sort"
           >
             <ArrowDownUp size={14} />
             {sort === "tanggal" ? "Tanggal" : "Jumlah"}
           </button>
-          <button onClick={() => { const no = order === "desc" ? "asc" : "desc"; setOrder(no); refresh({ order: no }); }} className="rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
+          <button onClick={() => { const no = order === "desc" ? "asc" : "desc"; setOrder(no); refresh({ order: no }); }} aria-label={order === "desc" ? "Urut menaik" : "Urut menurun"} className="min-h-[44px] min-w-[44px] rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
             {order === "desc" ? "↓" : "↑"}
           </button>
         </div>
