@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import {
   ArrowDownUp,
   CheckCheck,
@@ -22,13 +22,51 @@ import LogoutButton from "@/components/forms/logout-button";
 
 type ApiData = { debts: Debt[]; summary: DebtSummary };
 
+type FilterState = {
+  status: string;
+  type: string;
+  search: string;
+  sort: "tanggal" | "jumlah";
+  order: "asc" | "desc";
+};
+
+type FilterAction =
+  | { type: "set-status"; status: string }
+  | { type: "set-type"; debtType: string }
+  | { type: "set-search"; search: string }
+  | { type: "set-sort"; sort: FilterState["sort"] }
+  | { type: "set-order"; order: FilterState["order"] }
+  | { type: "reset-filters" };
+
+const initialFilters: FilterState = {
+  status: "semua",
+  type: "semua",
+  search: "",
+  sort: "tanggal",
+  order: "desc",
+};
+
+function filterReducer(state: FilterState, action: FilterAction): FilterState {
+  switch (action.type) {
+    case "set-status":
+      return { ...state, status: action.status };
+    case "set-type":
+      return { ...state, type: action.debtType };
+    case "set-search":
+      return { ...state, search: action.search };
+    case "set-sort":
+      return { ...state, sort: action.sort };
+    case "set-order":
+      return { ...state, order: action.order };
+    case "reset-filters":
+      return initialFilters;
+  }
+}
+
 export default function DebtDashboard({ email, initial }: { email: string; initial: ApiData }) {
   const [data, setData] = useState<ApiData>(initial);
-  const [status, setStatus] = useState("semua");
-  const [type, setType] = useState("semua");
-  const [search, setSearch] = useState("");
-  const [sort, setSort] = useState<"tanggal" | "jumlah">("tanggal");
-  const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [filters, dispatchFilter] = useReducer(filterReducer, initialFilters);
+  const { status, type, search, sort, order } = filters;
   const [view, setView] = useState<"catatan" | "orang">("catatan");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
@@ -209,7 +247,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
             <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => dispatchFilter({ type: "set-search", search: e.target.value })}
               placeholder="Cari nama..."
               className="min-h-[44px] w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-950"
             />
@@ -219,12 +257,12 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           </Button>
         </div>
         <div className="flex gap-2 text-sm">
-          <select value={status} onChange={(e) => { setStatus(e.target.value); }} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
+          <select value={status} onChange={(e) => dispatchFilter({ type: "set-status", status: e.target.value })} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
             <option value="semua">Semua status</option>
             <option value="belum">Belum lunas</option>
             <option value="lunas">Lunas</option>
           </select>
-          <select value={type} onChange={(e) => { setType(e.target.value); }} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
+          <select value={type} onChange={(e) => dispatchFilter({ type: "set-type", debtType: e.target.value })} className="min-h-[44px] flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
             <option value="semua">Semua tipe</option>
             <option value="owed_to_me">Dihutang</option>
             <option value="i_owe">Hutang</option>
@@ -232,7 +270,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           <button
             onClick={() => {
               const ns = sort === "tanggal" ? "jumlah" : "tanggal";
-              setSort(ns);
+              dispatchFilter({ type: "set-sort", sort: ns });
               refresh({ sort: ns });
             }}
             className="inline-flex min-h-[44px] items-center gap-1 rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800"
@@ -241,7 +279,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
             <ArrowDownUp size={14} />
             {sort === "tanggal" ? "Tanggal" : "Jumlah"}
           </button>
-          <button onClick={() => { const no = order === "desc" ? "asc" : "desc"; setOrder(no); refresh({ order: no }); }} aria-label={order === "desc" ? "Urut menaik" : "Urut menurun"} className="min-h-[44px] min-w-[44px] rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
+          <button onClick={() => { const no = order === "desc" ? "asc" : "desc"; dispatchFilter({ type: "set-order", order: no }); refresh({ order: no }); }} aria-label={order === "desc" ? "Urut menaik" : "Urut menurun"} className="min-h-[44px] min-w-[44px] rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
             {order === "desc" ? "↓" : "↑"}
           </button>
         </div>
@@ -289,7 +327,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           <p className="mt-2 font-semibold">Gak ketemu nih</p>
           <p className="text-sm text-zinc-500">Coba ubah filter atau kata pencariannya ya.</p>
           <div className="mt-4">
-            <Button onClick={() => { setStatus("semua"); setType("semua"); setSearch(""); }}>
+            <Button onClick={() => dispatchFilter({ type: "reset-filters" })}>
               Reset filter
             </Button>
           </div>
