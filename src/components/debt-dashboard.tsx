@@ -155,7 +155,7 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Cari nama..."
-              className="w-full rounded-full border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-950"
+              className="w-full rounded-xl border border-zinc-200 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-zinc-900 dark:border-zinc-800 dark:bg-zinc-950"
             />
           </div>
           <Button onClick={() => { setEditing(null); setFormError(null); setModalOpen(true); }}>
@@ -163,12 +163,12 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           </Button>
         </div>
         <div className="flex gap-2 text-sm">
-          <select value={status} onChange={(e) => { setStatus(e.target.value); }} className="flex-1 rounded-full border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
+          <select value={status} onChange={(e) => { setStatus(e.target.value); }} className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
             <option value="semua">Semua status</option>
             <option value="belum">Belum lunas</option>
             <option value="lunas">Lunas</option>
           </select>
-          <select value={type} onChange={(e) => { setType(e.target.value); }} className="flex-1 rounded-full border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
+          <select value={type} onChange={(e) => { setType(e.target.value); }} className="flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-1.5 dark:border-zinc-800 dark:bg-zinc-950">
             <option value="semua">Semua tipe</option>
             <option value="owed_to_me">Dihutang</option>
             <option value="i_owe">Hutang</option>
@@ -179,13 +179,13 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
               setSort(ns);
               refresh({ sort: ns });
             }}
-            className="inline-flex items-center gap-1 rounded-full border border-zinc-200 px-3 py-1.5 dark:border-zinc-800"
+            className="inline-flex items-center gap-1 rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800"
             title="Ganti sort"
           >
             <ArrowDownUp size={14} />
             {sort === "tanggal" ? "Tanggal" : "Jumlah"}
           </button>
-          <button onClick={() => { const no = order === "desc" ? "asc" : "desc"; setOrder(no); refresh({ order: no }); }} className="rounded-full border border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
+          <button onClick={() => { const no = order === "desc" ? "asc" : "desc"; setOrder(no); refresh({ order: no }); }} className="rounded-xl border border-zinc-200 px-3 py-1.5 dark:border-zinc-800">
             {order === "desc" ? "↓" : "↑"}
           </button>
         </div>
