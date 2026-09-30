@@ -36,8 +36,10 @@ export async function GET(request: Request) {
   if (rawType === "hutang") q.type = "i_owe";
 
   try {
-    const debts = await service.list(user.id, q);
-    const summary = await service.summaryForUser(user.id);
+    const [debts, summary] = await Promise.all([
+      service.list(user.id, q),
+      service.summaryForUser(user.id),
+    ]);
     return json(ok({ debts, summary }, "Nih daftar kasbon kamu"));
   } catch {
     return json(fail("Gagal ambil data, coba refresh ya"), 500);
