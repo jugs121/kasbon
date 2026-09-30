@@ -4,14 +4,18 @@ import { useEffect, useState } from "react";
 import {
   ArrowDownUp,
   CheckCheck,
+  ChevronDown,
   Pencil,
   Plus,
   Search,
   Trash2,
+  Users,
   Wallet,
 } from "lucide-react";
 import type { Debt, DebtSummary } from "@/modules/debts/debt.types";
 import { formatRelative, formatRupiah } from "@/lib/format";
+import { groupDebtsByPerson } from "@/modules/debts/debt.types";
+import DebtChart from "@/components/debt-chart";
 import { Button, Card } from "@/components/ui/primitives";
 import DebtFormModal from "@/components/forms/debt-form-modal";
 import LogoutButton from "@/components/forms/logout-button";
@@ -25,6 +29,8 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<"tanggal" | "jumlah">("tanggal");
   const [order, setOrder] = useState<"asc" | "desc">("desc");
+  const [view, setView] = useState<"catatan" | "orang">("catatan");
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -119,6 +125,54 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
 
   const { summary, debts } = data;
   const netPositive = summary.net >= 0;
+  const groups = view === "orang" ? groupDebtsByPerson(debts) : [];
+  const isFiltered = status !== "semua" || type !== "semua" || search.trim() !== "";
+
+  function togglePerson(key: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
+
+  function entryRow(d: Debt) {
+    const settled = d.settled_at !== null;
+    return (
+      <Card className={settled ? "bg-zinc-50/60 opacity-75 dark:bg-zinc-900/40" : "border-zinc-300 shadow-sm"}>
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className={`truncate ${settled ? "font-medium text-zinc-500" : "font-semibold text-zinc-900 dark:text-zinc-100"}`}>{d.counterpart_name}</p>
+            <p className="text-xs text-zinc-500">
+              <span className={`mr-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${d.type === "owed_to_me" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"}`}>
+                {d.type === "owed_to_me" ? "dihutang" : "hutang"}
+              </span>
+              {formatRelative(d.created_at)}
+              {d.note ? ` • ${d.note}` : ""}
+            </p>
+            <p className={settled ? "mt-1 text-sm font-semibold text-zinc-500" : "mt-1 text-base font-extrabold tracking-tight"}>{formatRupiah(d.amount)}</p>
+            <p className={`text-xs font-semibold ${settled ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
+              {settled ? "Lunas" : "Belum lunas"}
+            </p>
+          </div>
+          <div className="flex shrink-0 gap-1">
+            {!settled && (
+              <button onClick={() => toggleSettled(d)} title="Tandai lunas" aria-label={`Tandai lunas ${d.counterpart_name}`} className="rounded-full border border-emerald-300 p-2.5 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40">
+                <CheckCheck size={15} />
+              </button>
+            )}
+            <button onClick={() => { setEditing(d); setFormError(null); setModalOpen(true); }} title="Edit" aria-label={`Edit ${d.counterpart_name}`} className="rounded-full border border-zinc-200 p-2.5 hover:bg-zinc-100 dark:border-zinc-800">
+              <Pencil size={15} />
+            </button>
+            <button onClick={() => removeDebt(d)} title="Hapus" aria-label={`Hapus ${d.counterpart_name}`} className="rounded-full border border-zinc-200 p-2.5 text-red-600 hover:bg-red-50 dark:border-zinc-800">
+              <Trash2 size={15} />
+            </button>
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4 px-4 py-5">
@@ -146,6 +200,8 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
           </p>
         </Card>
       </section>
+
+      <DebtChart summary={summary} />
 
       <div className="flex flex-col gap-2">
         <div className="flex gap-2">
@@ -194,54 +250,104 @@ export default function DebtDashboard({ email, initial }: { email: string; initi
       {loading && <p className="text-center text-sm text-zinc-400">Lagi ngeload...</p>}
       {error && <p className="rounded-xl bg-red-50 p-3 text-center text-sm text-red-600">{error}</p>}
 
-      {!loading && debts.length === 0 && (
+      {!loading && debts.length === 0 && !isFiltered && (
         <Card className="py-10 text-center">
           <Wallet size={28} className="mx-auto text-zinc-300" />
           <p className="mt-2 font-semibold">Masih kosong nih</p>
           <p className="text-sm text-zinc-500">Belum ada catatan kasbon. Yuk catat yang pertama!</p>
+          <div className="mt-4">
+            <Button onClick={() => { setEditing(null); setFormError(null); setModalOpen(true); }}>
+              <Plus size={16} /> Catat kasbon pertama
+            </Button>
+          </div>
         </Card>
       )}
 
-      <ul className="flex flex-col gap-2">
-        {debts.map((d) => {
-          const settled = d.settled_at !== null;
+      {!loading && debts.length === 0 && isFiltered && (
+        <Card className="py-10 text-center">
+          <Search size={28} className="mx-auto text-zinc-300" />
+          <p className="mt-2 font-semibold">Gak ketemu nih</p>
+          <p className="text-sm text-zinc-500">Coba ubah filter atau kata pencariannya ya.</p>
+          <div className="mt-4">
+            <Button onClick={() => { setStatus("semua"); setType("semua"); setSearch(""); }}>
+              Reset filter
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {!loading && debts.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 rounded-2xl bg-zinc-100 p-1 dark:bg-zinc-900" role="tablist" aria-label="Tampilan daftar">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "catatan"}
+            onClick={() => setView("catatan")}
+            className={`rounded-xl px-3 py-2 text-sm font-semibold ${view === "catatan" ? "bg-white shadow dark:bg-zinc-950" : "text-zinc-500"}`}
+          >
+            Per catatan
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={view === "orang"}
+            onClick={() => setView("orang")}
+            className={`inline-flex items-center justify-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold ${view === "orang" ? "bg-white shadow dark:bg-zinc-950" : "text-zinc-500"}`}
+          >
+            <Users size={14} />
+            Per orang
+          </button>
+        </div>
+      )}
+
+      {view === "catatan" && (
+      <ul className="flex flex-col gap-2" aria-busy={loading}>
+        {debts.map((d) => (
+          <li key={d.id}>{entryRow(d)}</li>
+        ))}
+      </ul>
+      )}
+
+      {view === "orang" && (
+      <ul className="flex flex-col gap-2" aria-busy={loading}>
+        {groups.map((g) => {
+          const open = expanded.has(g.key);
+          const groupPositive = g.net >= 0;
           return (
-            <li key={d.id}>
-              <Card className={settled ? "bg-zinc-50/60 opacity-75 dark:bg-zinc-900/40" : "border-zinc-300 shadow-sm"}>
-                <div className="flex items-start justify-between gap-2">
+            <li key={g.key}>
+              <Card className="p-0">
+                <button
+                  type="button"
+                  onClick={() => togglePerson(g.key)}
+                  aria-expanded={open}
+                  className="flex w-full items-center justify-between gap-2 p-4 text-left"
+                >
                   <div className="min-w-0">
-                    <p className={`truncate ${settled ? "font-medium text-zinc-500" : "font-semibold text-zinc-900 dark:text-zinc-100"}`}>{d.counterpart_name}</p>
+                    <p className="truncate font-semibold">{g.name}</p>
                     <p className="text-xs text-zinc-500">
-                      <span className={`mr-1 inline-block rounded-md px-1.5 py-0.5 text-[10px] font-semibold ${d.type === "owed_to_me" ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300" : "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"}`}>
-                        {d.type === "owed_to_me" ? "dihutang" : "hutang"}
-                      </span>
-                      {formatRelative(d.created_at)}
-                      {d.note ? ` • ${d.note}` : ""}
-                    </p>
-                    <p className={settled ? "mt-1 text-sm font-semibold text-zinc-500" : "mt-1 text-base font-extrabold tracking-tight"}>{formatRupiah(d.amount)}</p>
-                    <p className={`text-xs font-semibold ${settled ? "text-emerald-700 dark:text-emerald-400" : "text-amber-700 dark:text-amber-400"}`}>
-                      {settled ? "Lunas" : "Belum lunas"}
+                      {g.count} entry • total {formatRupiah(g.net)}
                     </p>
                   </div>
-                  <div className="flex shrink-0 gap-1">
-                    {!settled && (
-                      <button onClick={() => toggleSettled(d)} title="Tandai lunas" className="rounded-full border border-emerald-300 p-2 text-emerald-700 hover:bg-emerald-50 dark:text-emerald-400 dark:hover:bg-emerald-950/40">
-                        <CheckCheck size={15} />
-                      </button>
-                    )}
-                    <button onClick={() => { setEditing(d); setFormError(null); setModalOpen(true); }} title="Edit" className="rounded-full border border-zinc-200 p-2 hover:bg-zinc-100 dark:border-zinc-800">
-                      <Pencil size={15} />
-                    </button>
-                    <button onClick={() => removeDebt(d)} title="Hapus" className="rounded-full border border-zinc-200 p-2 text-red-600 hover:bg-red-50 dark:border-zinc-800">
-                      <Trash2 size={15} />
-                    </button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <p className={`text-sm font-extrabold ${groupPositive ? "text-emerald-700 dark:text-emerald-400" : "text-rose-700 dark:text-rose-400"}`}>
+                      {formatRupiah(g.net)}
+                    </p>
+                    <ChevronDown size={16} className={`text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
                   </div>
-                </div>
+                </button>
+                {open && (
+                  <div className="flex flex-col gap-2 border-t border-zinc-100 p-3 dark:border-zinc-800">
+                    {g.entries.map((d) => (
+                      <div key={d.id}>{entryRow(d)}</div>
+                    ))}
+                  </div>
+                )}
               </Card>
             </li>
           );
         })}
       </ul>
+      )}
 
       <DebtFormModal
         key={editing?.id ?? "new"}
